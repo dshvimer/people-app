@@ -30,6 +30,7 @@ defmodule AppWeb.Endpoint do
     plug Phoenix.CodeReloader
   end
 
+  plug Corsica, origins: "*"
   plug Plug.RequestId
   plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
 

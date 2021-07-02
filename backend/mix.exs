@@ -20,7 +20,7 @@ defmodule App.MixProject do
   def application do
     [
       mod: {App.Application, []},
-      extra_applications: [:logger, :runtime_tools]
+      extra_applications: [:logger, :runtime_tools, :corsica]
     ]
   end
 
@@ -40,7 +40,8 @@ defmodule App.MixProject do
       {:jason, "~> 1.0"},
       {:plug_cowboy, "~> 2.0"},
       {:httpoison, "~> 1.8"},
-      {:fe, "~> 0.1.2"}
+      {:fe, "~> 0.1.2"},
+      {:corsica, "~> 1.0"}
     ]
   end
 
