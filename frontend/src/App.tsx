@@ -10,6 +10,8 @@ const Loading = () => {
   )
 }
 
+const Error = () => <Heading m="5" mb="0" as="h4" size="md">There was an error</Heading>
+
 type PersonProps = {
   email_address: string,
   first_name: string,
@@ -32,27 +34,38 @@ const Person = ({email_address, first_name, last_name, title}: PersonProps) => {
 }
 
 const usePeople = () => {
-  const [page, setPage] = useState(1)
+  const [page, setPage] = useState('1')
   const [loading, setLoading] = useState(false)
   const [people, setPeople] = useState([])
+  const [nextPage, setNextPage] = useState('2')
+  const [error, setError] = useState(false)
 
 
   useEffect(() => {
     setLoading(true)
-    const getPeople = async (page: number) => {
+    const getPeople = async (page: string) => {
       const res = await fetch(`${process.env.REACT_APP_API_URL}/api/people?page=${page}`)
-      const data = await res.json()
-      setPeople(people.concat(data.data))
-      setLoading(false)
+      if (res.status === 200) {
+        const data = await res.json()
+        setPeople(people.concat(data.data))
+        setNextPage(data.metadata.paging.next_page)
+        setLoading(false)
+        setError(false)
+      } else {
+        setError(true)
+        setLoading(false)
+      }
     }
     getPeople(page)
   }, [page])
 
-  return {people, loading, page, setPage}
+  return {people, loading, nextPage, setPage, error}
 }
 
 const People = ({}) => {
-  const {people, loading, page, setPage} = usePeople()
+  const {people, loading, nextPage, setPage, error} = usePeople()
+
+  if (error) return <Error/>
 
   return (
      <VStack py="4em">
@@ -68,7 +81,7 @@ const People = ({}) => {
           <Loading/>
           <Loading/>
         </>
-      ) : <Button onClick={() => setPage(page + 1)}>Load more</Button>}
+      ) : nextPage && <Button onClick={() => setPage(nextPage)}>Load more</Button>}
     </VStack>
   )
 }

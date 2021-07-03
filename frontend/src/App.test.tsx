@@ -49,11 +49,38 @@ describe('App', () => {
     expect(thirdPerson).toBeInTheDocument()
     expect(fourthPerson).toBeInTheDocument()
   })
+
+  test('Does not allow Load more on last page', async () => {
+    server.use(
+      rest.get('http://localhost:4000/api/people', (req, res, ctx) => {
+        return res(
+            ctx.status(200),
+            ctx.json(lastPage)
+          )
+      })
+    )
+    render( <App/> )
+    await waitFor(() => screen.getByText(/c@example.com/i))
+    await waitFor(() => screen.getByText(/d@example.com/i))
+    expect(screen.queryByText("Load more")).not.toBeInTheDocument()
+  })
+
+  test('Shows error if API error', async () => {
+    server.use(
+      rest.get('http://localhost:4000/api/people', (req, res, ctx) => {
+        return res(
+            ctx.status(404),
+          )
+      })
+    )
+    render( <App/> )
+    await waitFor(() => screen.getByText(/Error/i))
+    expect(screen.queryByText("There was an error")).toBeInTheDocument()
+  })
 })
 
 const server = setupServer(
   rest.get('http://localhost:4000/api/people', (req, res, ctx) => {
-    console.log('Request Handler')
     if (req.url.searchParams.get('page') === "1") {
       return res(
         ctx.status(200),
