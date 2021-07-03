@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import useFetch , { Provider }from 'use-http'
 import { Box, HStack, ChakraProvider, Flex, Button, VStack, Heading, Text, SkeletonCircle, SkeletonText } from "@chakra-ui/react"
 
@@ -32,8 +32,7 @@ const Person = ({email_address, first_name, last_name, title}: PersonProps) => {
   )
 }
 
-const People = ({}) => {
-  const [bottom, setBottom] = useState(false)
+const usePeople = () => {
   const [page, setPage] = useState(1)
 
   const { data, loading } = useFetch(`/api/people?page=${page}`, {
@@ -47,28 +46,17 @@ const People = ({}) => {
     data: {data: [], metadata: {}}
   }, [page]) // runs onMount AND whenever the `page` updates (onUpdate)
 
-  useEffect(() => {
-    if (bottom) {
-      setBottom(false)
-      setPage(page + 1)
-    }
-  }, [bottom])
+  const people = data.data
+  return {people, loading, page, setPage}
+}
 
-  const onScroll = (event: React.UIEvent<HTMLElement>) => {
-    const target = event.currentTarget
-
-    console.log('scroll')
-    if (!bottom && !loading) {
-      if (target.scrollHeight - target.scrollTop < target.clientHeight + 200) {
-        setBottom(true)
-      }
-    }
-  }
+const People = ({}) => {
+  const {people, loading, page, setPage} = usePeople()
 
   return (
-     <VStack w="100%" h="100vh" overflow="scroll" onScroll={onScroll}>
+     <VStack py="4em">
 
-      {data.data.map((person: any) => {
+      {people.map((person: any) => {
         return <Person key={person.id} {...person}/>
       })}
 
@@ -79,7 +67,7 @@ const People = ({}) => {
           <Loading/>
           <Loading/>
         </>
-      ) : null}
+      ) : <Button onClick={() => setPage(page + 1)}>Load more</Button>}
     </VStack>
   )
 }
@@ -89,17 +77,16 @@ function App() {
     <Provider url={process.env.REACT_APP_API_URL}>
       <ChakraProvider>
 
-        <Box bg="none" px={4}>
-          <Flex h={16} alignItems={'center'} justifyContent={'space-between'}>
-            <HStack
-              as={'nav'}
-              spacing={4}
-              display={{ base: 'none', md: 'flex' }}>
-              <Button >Test</Button>
-              <Button >Test</Button>
-            </HStack>
-          </Flex>
-        </Box>
+          <Box w="100%" position="fixed" bg="white" px={4}>
+            <Flex h={16} alignItems={'center'} justifyContent={'space-between'}>
+              <HStack
+                as={'nav'}
+                spacing={4}>
+                <Button>Histogram</Button>
+                <Button>Duplicates</Button>
+              </HStack>
+            </Flex>
+          </Box>
 
           <People/>
       </ChakraProvider>
