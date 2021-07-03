@@ -77,6 +77,36 @@ describe('App', () => {
     await waitFor(() => screen.getByText(/Error/i))
     expect(screen.queryByText("There was an error")).toBeInTheDocument()
   })
+
+  test('shows character count', async () => {
+    render( <App/> )
+    const button = await screen.findByText('Histogram')
+    fireEvent.click(button)
+
+    await waitFor(() => screen.getByText(/a: 2/i))
+    const firstChar = await screen.findByText("a: 2")
+    const secondChar = await screen.findByText("b: 1")
+    expect(firstChar).toBeInTheDocument()
+    expect(secondChar).toBeInTheDocument()
+  })
+
+  test('shows error when character count fails', async () => {
+    server.use(
+      rest.get('http://localhost:4000/api/people/chars', (req, res, ctx) => {
+        return res(
+            ctx.status(404),
+          )
+      })
+    )
+
+    render( <App/> )
+    const button = await screen.findByText('Histogram')
+    fireEvent.click(button)
+
+    await waitFor(() => screen.getByText(/There was an error.../i))
+    const e = await screen.findByText("There was an error...")
+    expect(e).toBeInTheDocument()
+  })
 })
 
 const server = setupServer(
@@ -92,6 +122,12 @@ const server = setupServer(
         ctx.json(lastPage)
       )
     }
+  }),
+  rest.get('http://localhost:4000/api/people/chars', (req, res, ctx) => {
+    return res(
+      ctx.status(200),
+      ctx.json([{character: "a", count: 2}, {character: "b", count: 1}])
+    )
   })
 )
 

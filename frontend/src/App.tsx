@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Box, HStack, ChakraProvider, Flex, Button, VStack, Heading, Text, SkeletonCircle, SkeletonText } from "@chakra-ui/react"
+import { Box, HStack, ChakraProvider, Flex, Button, VStack, Heading, Text, SkeletonCircle, SkeletonText, Modal, ModalContent, ModalOverlay, ModalHeader, ModalBody, ModalCloseButton } from "@chakra-ui/react"
 
 const Loading = () => {
   return (
@@ -86,7 +86,65 @@ const People = ({}) => {
   )
 }
 
+const useCharacterCount = () => {
+  const [loading, setLoading] = useState(false)
+  const [count, setCount] = useState([])
+  const [error, setError] = useState(false)
+
+
+  useEffect(() => {
+    setLoading(true)
+    const getCount = async () => {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/people/chars`)
+      if (res.status === 200) {
+        const data = await res.json()
+        setCount(data)
+        setLoading(false)
+        setError(false)
+      } else {
+        setError(true)
+        setLoading(false)
+      }
+    }
+    getCount()
+  }, [])
+
+  return {count, loading, error}
+}
+
+type CharacterStat = {
+  character: string,
+  count: number
+}
+
+type CharacterCountProps = {
+  close: () => void
+}
+
+const CharacterCount = ({close}: CharacterCountProps) => {
+  const {count, loading, error} = useCharacterCount()
+
+  return (
+    <Modal isOpen={true} onClose={close}>
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>Character Frequency</ModalHeader>
+        <ModalCloseButton />
+        <ModalBody pb={6}>
+          {error && <Text>There was an error...</Text>}
+
+          {loading ? <Text>Loading</Text> : (
+            count.map((item: CharacterStat, index: number) => <Text key={index}>{item.character}: {item.count}</Text>)
+          )}
+        </ModalBody>
+      </ModalContent>
+    </Modal>
+  )
+}
+
+
 function App() {
+  const [showChars, setShowChars] = useState(false)
   return (
     <ChakraProvider>
 
@@ -95,11 +153,13 @@ function App() {
             <HStack
               as={'nav'}
               spacing={4}>
-              <Button>Histogram</Button>
+              <Button onClick={() => setShowChars(true)}>Histogram</Button>
               <Button>Duplicates</Button>
             </HStack>
           </Flex>
         </Box>
+
+        {showChars && <CharacterCount close={() => setShowChars(false)}/>}
 
         <People/>
     </ChakraProvider>
