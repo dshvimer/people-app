@@ -1,10 +1,17 @@
 defmodule Test.Support.Fake.Salesloft do
   use Plug.Router
-  plug Plug.Parsers, parsers: [:json], json_decoder: Jason
-  plug :match
-  plug :dispatch
+  plug(Plug.Parsers, parsers: [:json], json_decoder: Jason)
+  plug(:match)
+  plug(:dispatch)
 
-  def start do
+  defp default_handler do
+    fn conn, status, data ->
+      ["Bearer 123"] = get_req_header(conn, "authorization")
+      send_resp(conn, status, Jason.encode!(data))
+    end
+  end
+
+  def start(handler \\ default_handler()) do
     Plug.Cowboy.shutdown(__MODULE__)
 
     {:ok, _pid} =
@@ -13,7 +20,7 @@ defmodule Test.Support.Fake.Salesloft do
         port: 4003
       )
 
-    Agent.start_link(fn -> [] end, name: __MODULE__)
+    Agent.start_link(fn -> {200, fake_data(), handler} end, name: __MODULE__)
   end
 
   def stop do
@@ -24,10 +31,13 @@ defmodule Test.Support.Fake.Salesloft do
     Agent.get(__MODULE__, &Enum.reverse(&1))
   end
 
+  def set_next_response({status, next_data}) do
+    Agent.update(__MODULE__, fn {_, _, handler} -> {status, next_data, handler} end)
+  end
+
   get "/v2/people.json" do
-    ["Bearer 123"] = get_req_header(conn, "authorization")
-    Agent.update(__MODULE__, &[{:index, query: fetch_query_params(conn)} | &1])
-    send_resp(conn, 200, Jason.encode!(fake_data()))
+    {status, data, handler} = Agent.get(__MODULE__, fn next -> next end)
+    handler.(conn, status, data)
   end
 
   defp fake_data do

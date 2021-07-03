@@ -8,5 +8,6 @@ defmodule AppWeb.Router do
   scope "/api", AppWeb do
     pipe_through :api
     get "/people", PeopleController, :index
+    get "/people/chars", PeopleController, :characters
   end
 end
