@@ -1,13 +1,5 @@
-import { useState } from 'react'
-import useFetch , { Provider }from 'use-http'
+import { useState, useEffect } from 'react'
 import { Box, HStack, ChakraProvider, Flex, Button, VStack, Heading, Text, SkeletonCircle, SkeletonText } from "@chakra-ui/react"
-
-type PersonProps = {
-  email_address: string,
-  first_name: string,
-  last_name: string,
-  title: string
-}
 
 const Loading = () => {
   return (
@@ -16,6 +8,13 @@ const Loading = () => {
       <SkeletonText mt="4" noOfLines={4} spacing="4" />
     </Box>
   )
+}
+
+type PersonProps = {
+  email_address: string,
+  first_name: string,
+  last_name: string,
+  title: string
 }
 
 const Person = ({email_address, first_name, last_name, title}: PersonProps) => {
@@ -34,19 +33,21 @@ const Person = ({email_address, first_name, last_name, title}: PersonProps) => {
 
 const usePeople = () => {
   const [page, setPage] = useState(1)
+  const [loading, setLoading] = useState(false)
+  const [people, setPeople] = useState([])
 
-  const { data, loading } = useFetch(`/api/people?page=${page}`, {
-    onNewData: (currentData, newData) => {
-      return {
-        data: currentData.data.concat(newData.data),
-        metadata: newData.metadata
-      }
-    },
-    perPage: 25, // stops making more requests if last todos fetched < 25
-    data: {data: [], metadata: {}}
-  }, [page]) // runs onMount AND whenever the `page` updates (onUpdate)
 
-  const people = data.data
+  useEffect(() => {
+    setLoading(true)
+    const getPeople = async (page: number) => {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/people?page=${page}`)
+      const data = await res.json()
+      setPeople(people.concat(data.data))
+      setLoading(false)
+    }
+    getPeople(page)
+  }, [page])
+
   return {people, loading, page, setPage}
 }
 
@@ -74,23 +75,21 @@ const People = ({}) => {
 
 function App() {
   return (
-    <Provider url={process.env.REACT_APP_API_URL}>
-      <ChakraProvider>
+    <ChakraProvider>
 
-          <Box w="100%" position="fixed" bg="white" px={4}>
-            <Flex h={16} alignItems={'center'} justifyContent={'space-between'}>
-              <HStack
-                as={'nav'}
-                spacing={4}>
-                <Button>Histogram</Button>
-                <Button>Duplicates</Button>
-              </HStack>
-            </Flex>
-          </Box>
+        <Box w="100%" position="fixed" bg="white" px={4}>
+          <Flex h={16} alignItems={'center'} justifyContent={'space-between'}>
+            <HStack
+              as={'nav'}
+              spacing={4}>
+              <Button>Histogram</Button>
+              <Button>Duplicates</Button>
+            </HStack>
+          </Flex>
+        </Box>
 
-          <People/>
-      </ChakraProvider>
-    </Provider>
+        <People/>
+    </ChakraProvider>
   )
 }
 
