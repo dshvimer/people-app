@@ -107,6 +107,38 @@ describe('App', () => {
     const e = await screen.findByText("There was an error...")
     expect(e).toBeInTheDocument()
   })
+
+  test('shows duplicates', async () => {
+    render( <App/> )
+    const button = await screen.findByText('Duplicates')
+    fireEvent.click(button)
+
+    await waitFor(() => screen.getByText(/dup1@example.com/i))
+    const first = await screen.findByText("dup1@example.com")
+    const second = await screen.findByText("dup2@example.com")
+    expect(first).toBeInTheDocument()
+    expect(second).toBeInTheDocument()
+  })
+
+  test('shows error when duplicates fails', async () => {
+    server.use(
+      rest.get('http://localhost:4000/api/people/duplicates', (req, res, ctx) => {
+        return res(
+            ctx.status(404),
+          )
+      })
+    )
+
+    render( <App/> )
+    const button = await screen.findByText('Duplicates')
+    fireEvent.click(button)
+
+    await waitFor(() => screen.getByText(/There was an error.../i))
+    const e = await screen.findByText("There was an error...")
+    expect(e).toBeInTheDocument()
+  })
+
+
 })
 
 const server = setupServer(
@@ -128,10 +160,35 @@ const server = setupServer(
       ctx.status(200),
       ctx.json([{character: "a", count: 2}, {character: "b", count: 1}])
     )
+  }),
+  rest.get('http://localhost:4000/api/people/duplicates', (req, res, ctx) => {
+    return res(
+      ctx.status(200),
+      ctx.json(duplicates)
+    )
   })
+
 )
 
-//Setup stuff
+const duplicates = [
+  {
+    possible_duplicate: {
+      "email_address": "dup1@example.com",
+      "first_name": "Steven",
+      "id": 1,
+      "last_name": "Pease",
+      "title": "Software Engineer"
+    },
+    duplicated_by: {
+      "email_address": "dup2@example.com",
+      "first_name": "Steven",
+      "id": 1,
+      "last_name": "Pease",
+      "title": "Software Engineer"
+    }
+  }
+]
+
 const firstPage = {
   "data": [
     {

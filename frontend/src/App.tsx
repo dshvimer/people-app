@@ -12,14 +12,14 @@ const Loading = () => {
 
 const Error = () => <Heading m="5" mb="0" as="h4" size="md">There was an error</Heading>
 
-type PersonProps = {
+type Person = {
   email_address: string,
   first_name: string,
   last_name: string,
   title: string
 }
 
-const Person = ({email_address, first_name, last_name, title}: PersonProps) => {
+const Person = ({email_address, first_name, last_name, title}: Person) => {
   return (
       <Box minH="10em" minW="sm" borderWidth="1px" borderRadius="lg" overflow="hidden">
         <Box m="5" as="a" href="/blog-post-thing">
@@ -142,9 +142,75 @@ const CharacterCount = ({close}: CharacterCountProps) => {
   )
 }
 
+const useDuplicates = () => {
+  const [loading, setLoading] = useState(false)
+  const [dups, setDups] = useState([])
+  const [error, setError] = useState(false)
+
+
+  useEffect(() => {
+    setLoading(true)
+    const getDups = async () => {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/people/duplicates`)
+      if (res.status === 200) {
+        const data = await res.json()
+        setDups(data)
+        setLoading(false)
+        setError(false)
+      } else {
+        setError(true)
+        setLoading(false)
+      }
+    }
+    getDups()
+  }, [])
+
+  return {dups, loading, error}
+}
+
+type Duplicate = {
+  duplicated_by: Person,
+  possible_duplicate: Person
+}
+
+type DuplicatesProps = {
+  close: () => void
+}
+
+const Duplicates = ({close}: DuplicatesProps) => {
+  const {dups, loading, error} = useDuplicates()
+
+  return (
+    <Modal isOpen={true} onClose={close}>
+      <ModalOverlay />
+      <ModalContent minW="75%">
+        <ModalHeader>Duplicates</ModalHeader>
+        <ModalCloseButton />
+        <ModalBody pb={6}>
+          {error && <Text>There was an error...</Text>}
+
+          {loading ? <Text>Loading</Text> : (
+            dups.map((item: Duplicate, index: number) => {
+              const {possible_duplicate, duplicated_by} = item
+              return (
+                <HStack key={index}>
+                  <Person {...possible_duplicate} />
+                  <Text>Duplicated by -`{'>'}`</Text>
+                  <Person {...duplicated_by} />
+                </HStack>
+              )
+            })
+          )}
+        </ModalBody>
+      </ModalContent>
+    </Modal>
+  )
+}
+
 
 function App() {
   const [showChars, setShowChars] = useState(false)
+  const [showDups, setShowDups] = useState(false)
   return (
     <ChakraProvider>
 
@@ -154,12 +220,14 @@ function App() {
               as={'nav'}
               spacing={4}>
               <Button onClick={() => setShowChars(true)}>Histogram</Button>
-              <Button>Duplicates</Button>
+              <Button onClick={() => setShowDups(true)}>Duplicates</Button>
+
             </HStack>
           </Flex>
         </Box>
 
         {showChars && <CharacterCount close={() => setShowChars(false)}/>}
+        {showDups && <Duplicates close={() => setShowDups(false)}/>}
 
         <People/>
     </ChakraProvider>
