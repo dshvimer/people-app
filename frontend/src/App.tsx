@@ -1,36 +1,52 @@
-import { useState, useEffect } from 'react'
-import { Box, HStack, ChakraProvider, Flex, Button, VStack, Heading, Text, SkeletonCircle, SkeletonText, Modal, ModalContent, ModalOverlay, ModalHeader, ModalBody, ModalCloseButton } from "@chakra-ui/react"
-
-const Loading = () => {
-  return (
-    <Box minW="sm" padding="6" boxShadow="lg" bg="white">
-      <SkeletonCircle size="10" />
-      <SkeletonText mt="4" noOfLines={4} spacing="4" />
-    </Box>
-  )
-}
-
-const Error = () => <Heading m="5" mb="0" as="h4" size="md">There was an error</Heading>
+import { useState, useEffect, ReactChild, PropsWithChildren } from 'react'
+import { SimpleGrid, Grid, Box, HStack, ChakraProvider, Flex, Button, VStack, Heading, Text, SkeletonCircle, SkeletonText, Modal, ModalContent, ModalOverlay, ModalHeader, ModalBody, ModalCloseButton } from "@chakra-ui/react"
 
 type Person = {
+  id: number,
   email_address: string,
   first_name: string,
   last_name: string,
   title: string
 }
 
-const Person = ({email_address, first_name, last_name, title}: Person) => {
-  return (
-      <Box minH="10em" minW="sm" borderWidth="1px" borderRadius="lg" overflow="hidden">
-        <Box m="5" as="a" href="/blog-post-thing">
-          <Heading m="5" mb="0" as="h4" size="md">
-            {first_name} {last_name}
-          </Heading>
-          <Text m="5" mt="0">{email_address}</Text>
-          <Text m="5" mt="0">{title}</Text>
-        </Box>
-    </Box>
-  )
+type CharacterStat = {
+  character: string,
+  count: number
+}
+
+type Duplicate = {
+  duplicated_by: Person,
+  possible_duplicate: Person
+}
+
+type CloseProps = {
+  close: () => void
+}
+
+const useDuplicates = () => {
+  const [loading, setLoading] = useState(false)
+  const [dups, setDups] = useState([])
+  const [error, setError] = useState(false)
+
+
+  useEffect(() => {
+    setLoading(true)
+    const getDups = async () => {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/people/duplicates`)
+      if (res.status === 200) {
+        const data = await res.json()
+        setDups(data)
+        setLoading(false)
+        setError(false)
+      } else {
+        setError(true)
+        setLoading(false)
+      }
+    }
+    getDups()
+  }, [])
+
+  return {dups, loading, error}
 }
 
 const usePeople = () => {
@@ -62,30 +78,6 @@ const usePeople = () => {
   return {people, loading, nextPage, setPage, error}
 }
 
-const People = ({}) => {
-  const {people, loading, nextPage, setPage, error} = usePeople()
-
-  if (error) return <Error/>
-
-  return (
-     <VStack py="4em">
-
-      {people.map((person: any) => {
-        return <Person key={person.id} {...person}/>
-      })}
-
-      {loading ? (
-        <>
-          <Loading/>
-          <Loading/>
-          <Loading/>
-          <Loading/>
-        </>
-      ) : nextPage && <Button onClick={() => setPage(nextPage)}>Load more</Button>}
-    </VStack>
-  )
-}
-
 const useCharacterCount = () => {
   const [loading, setLoading] = useState(false)
   const [count, setCount] = useState([])
@@ -112,16 +104,61 @@ const useCharacterCount = () => {
   return {count, loading, error}
 }
 
-type CharacterStat = {
-  character: string,
-  count: number
+const Skeleton = () => {
+  return (
+    <Box minW="sm" padding="6" boxShadow="lg" bg="white">
+      <SkeletonCircle size="10" />
+      <SkeletonText mt="4" noOfLines={4} spacing="4" />
+    </Box>
+  )
 }
 
-type CharacterCountProps = {
-  close: () => void
+const Error = () => <Heading m="5" mb="0" as="h4" size="md">There was an error</Heading>
+
+const Person = ({email_address, first_name, last_name, title}: Person) => {
+  return (
+      <Box minH="10em" borderWidth="1px" borderRadius="lg" overflow="hidden">
+        <Box m="5" as="a" href="/blog-post-thing">
+          <Heading m="5" mb="0" as="h4" size="md">
+            {first_name} {last_name}
+          </Heading>
+          <Text m="5" mt="0">{email_address}</Text>
+          <Text m="5" mt="0">{title}</Text>
+        </Box>
+    </Box>
+  )
 }
 
-const CharacterCount = ({close}: CharacterCountProps) => {
+const People = ({}) => {
+  const {people, loading, nextPage, setPage, error} = usePeople()
+
+  if (error) return <Error/>
+
+  return (
+    <>
+      <Grid py="4em" templateColumns="repeat(auto-fit, minmax(25em, 1fr))" gap={6}>
+        {people.map((person: any) => {
+          return <Person key={person.id} {...person}/>
+        })}
+        {loading && (
+          <>
+            <Skeleton/>
+            <Skeleton/>
+            <Skeleton/>
+            <Skeleton/>
+            <Skeleton/>
+            <Skeleton/>
+          </>
+        )}
+      </Grid>
+      {!loading && nextPage && (
+        <Button isFullWidth mb="4em" onClick={() => setPage(nextPage)}>Load more</Button>
+      )}
+    </>
+  )
+}
+
+const CharacterCount = ({close}: CloseProps) => {
   const {count, loading, error} = useCharacterCount()
 
   return (
@@ -142,96 +179,74 @@ const CharacterCount = ({close}: CharacterCountProps) => {
   )
 }
 
-const useDuplicates = () => {
-  const [loading, setLoading] = useState(false)
-  const [dups, setDups] = useState([])
-  const [error, setError] = useState(false)
-
-
-  useEffect(() => {
-    setLoading(true)
-    const getDups = async () => {
-      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/people/duplicates`)
-      if (res.status === 200) {
-        const data = await res.json()
-        setDups(data)
-        setLoading(false)
-        setError(false)
-      } else {
-        setError(true)
-        setLoading(false)
-      }
-    }
-    getDups()
-  }, [])
-
-  return {dups, loading, error}
-}
-
-type Duplicate = {
-  duplicated_by: Person,
-  possible_duplicate: Person
-}
-
-type DuplicatesProps = {
-  close: () => void
-}
-
-const Duplicates = ({close}: DuplicatesProps) => {
+const Duplicates = ({close}: CloseProps) => {
   const {dups, loading, error} = useDuplicates()
 
   return (
-    <Modal isOpen={true} onClose={close}>
+    <Modal isOpen={true} onClose={close} size="lg">
       <ModalOverlay />
-      <ModalContent minW="75%">
+      <ModalContent>
         <ModalHeader>Duplicates</ModalHeader>
         <ModalCloseButton />
-        <ModalBody pb={6}>
+        <ModalBody>
           {error && <Text>There was an error...</Text>}
-
           {loading ? <Text>Loading</Text> : (
-            dups.map((item: Duplicate, index: number) => {
-              const {possible_duplicate, duplicated_by} = item
-              return (
-                <HStack key={index}>
-                  <Person {...possible_duplicate} />
-                  <Text>Duplicated by -`{'>'}`</Text>
-                  <Person {...duplicated_by} />
-                </HStack>
-              )
-            })
+            <HStack>
+              <Text flex="1">Possible Duplicate</Text>
+              <Text flex="1">Duplicated By</Text>
+            </HStack>
           )}
+
+          {dups.map((item: Duplicate, index: number) => {
+            const {possible_duplicate, duplicated_by} = item
+            return (
+              <HStack key={index}>
+                <Box flex="1">
+                  <Person {...possible_duplicate} />
+                </Box>
+                <Box flex="1">
+                <Person {...duplicated_by} />
+                </Box>
+              </HStack>
+            )
+          })}
+
         </ModalBody>
       </ModalContent>
     </Modal>
   )
 }
 
+const Toolbar = ({children}: PropsWithChildren<{}>) => {
+  return (
+    <Box w="100%" position="fixed" bg="white" px={4}>
+      <Flex h={16} alignItems={'center'} justifyContent={'space-between'}>
+        <HStack
+          as={'nav'}
+          spacing={4}>
+          {children}
+        </HStack>
+      </Flex>
+    </Box>
+  )
+}
 
-function App() {
+const App = () => {
   const [showChars, setShowChars] = useState(false)
   const [showDups, setShowDups] = useState(false)
   return (
     <ChakraProvider>
+      <Toolbar>
+        <Button onClick={() => setShowChars(true)}>Histogram</Button>
+        <Button onClick={() => setShowDups(true)}>Duplicates</Button>
+      </Toolbar>
 
-        <Box w="100%" position="fixed" bg="white" px={4}>
-          <Flex h={16} alignItems={'center'} justifyContent={'space-between'}>
-            <HStack
-              as={'nav'}
-              spacing={4}>
-              <Button onClick={() => setShowChars(true)}>Histogram</Button>
-              <Button onClick={() => setShowDups(true)}>Duplicates</Button>
-
-            </HStack>
-          </Flex>
-        </Box>
-
-        {showChars && <CharacterCount close={() => setShowChars(false)}/>}
-        {showDups && <Duplicates close={() => setShowDups(false)}/>}
+      {showChars && <CharacterCount close={() => setShowChars(false)}/>}
+      {showDups && <Duplicates close={() => setShowDups(false)}/>}
 
         <People/>
     </ChakraProvider>
   )
 }
 
-export default App;
+export default App
