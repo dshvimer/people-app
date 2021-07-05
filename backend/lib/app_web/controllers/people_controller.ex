@@ -19,4 +19,18 @@ defmodule AppWeb.PeopleController do
       {:error, :unknown} -> put_status(conn, 500)
     end
   end
+
+  def duplicates(conn, _) do
+    case Salesloft.get_all_people() do
+      {:ok, people} ->
+        duplicated = Validation.possible_duplicates(people)
+        render(conn, "duplicates.json", duplicates: duplicated)
+
+      {:error, :not_authenticated} ->
+        put_status(conn, 401)
+
+      {:error, :unknown} ->
+        put_status(conn, 500)
+    end
+  end
 end

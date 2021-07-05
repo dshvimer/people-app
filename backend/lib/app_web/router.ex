@@ -9,5 +9,6 @@ defmodule AppWeb.Router do
     pipe_through :api
     get "/people", PeopleController, :index
     get "/people/chars", PeopleController, :characters
+    get "/people/duplicates", PeopleController, :duplicates
   end
 end

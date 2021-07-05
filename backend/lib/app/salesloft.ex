@@ -9,21 +9,28 @@ defmodule App.Salesloft do
   end
 
   def get_all_emails() do
-    do_all_emails(1, [])
+    case do_all_people(1, []) do
+      {:ok, people} -> {:ok, Enum.map(people, & &1["email_address"])}
+      error -> error
+    end
   end
 
-  defp do_all_emails(:error, error), do: {:error, error}
-  defp do_all_emails(nil, emails), do: {:ok, emails}
+  def get_all_people() do
+    do_all_people(1, [])
+  end
 
-  defp do_all_emails(page, emails) do
+  defp do_all_people(:error, error), do: {:error, error}
+  defp do_all_people(nil, people), do: {:ok, people}
+
+  defp do_all_people(page, people) do
     case list_people(page) do
       {:ok, data} ->
-        new_emails = Enum.map(data["data"], & &1["email_address"])
+        new_people = data["data"]
         next_page = get_in(data, ["metadata", "paging", "next_page"])
-        do_all_emails(next_page, emails ++ new_emails)
+        do_all_people(next_page, people ++ new_people)
 
       {:error, e} ->
-        do_all_emails(:error, e)
+        do_all_people(:error, e)
     end
   end
 

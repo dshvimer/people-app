@@ -76,6 +76,42 @@ defmodule App.SalesloftTest do
     end
   end
 
+  describe "get_all_people/0" do
+    test "gets all people successfully" do
+      # given
+      handler = fn conn, status, _ ->
+        if conn.query_string == "page=1" do
+          Plug.Conn.send_resp(conn, status, Jason.encode!(fake_data()))
+        else
+          Plug.Conn.send_resp(conn, status, Jason.encode!(last_page()))
+        end
+      end
+
+      {:ok, _pid} = Fake.Salesloft.start(handler)
+
+      # when
+      result = Salesloft.get_all_people()
+
+      # then
+      assert {:ok, people} = result
+
+      assert ["a@example.com", "b@example.com", "c@example.com"] ==
+               Enum.map(people, & &1["email_address"])
+    end
+
+    test "returns error on failure" do
+      # given
+      {:ok, _pid} = Fake.Salesloft.start()
+      Fake.Salesloft.set_next_response({401, %{}})
+
+      # when
+      result = Salesloft.get_all_emails()
+
+      # then
+      assert {:error, :not_authenticated} = result
+    end
+  end
+
   defp fake_data do
     %{
       data: [

@@ -8,7 +8,19 @@ defmodule AppWeb.PeopleView do
     }
   end
 
-  def render("person.json", %{people: person}) do
-    Map.take(person, ["id", "email_address", "first_name", "last_name", "title"])
+  def render("duplicates.json", %{duplicates: dups}) do
+    render_many(dups, __MODULE__, "duplicate.json")
   end
+
+  def render("duplicate.json", %{people: %{possible_duplicate: a, duplicated_by: b}}) do
+    %{
+      possible_duplicate: person_fields(a),
+      duplicated_by: person_fields(b)
+    }
+  end
+
+  def render("person.json", %{people: person}), do: person_fields(person)
+
+  defp person_fields(person),
+    do: Map.take(person, ["id", "email_address", "first_name", "last_name", "title"])
 end
