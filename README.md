@@ -35,6 +35,8 @@ When I was maintaining an elixir app at Papa, we used Absinthe and gql. Unfortun
 
 I added the `FE` package that some of my co-workers wrote. I really like the `and_then`, `map`, `map_error` functions here. I've seen some unruly `with` statements and `case` trees. The haskell style functions make railway style code so much more readable.
 
+I didn't add any additional logging
+
 ### Frontend
 
 To make review easier, I decided to put everything into one file. In a real application it's better to have each component/object in it's own folder. In the folder, the component, a test and a story file. Storybook is the best way to develop components. That guarantees isolation. I chose to use Chakra UI because I haven't had the chance to yet and was looking for an excuse. The design is minimal and they include some components for layout that mirror every layout's philosophy: https://every-layout.dev/
